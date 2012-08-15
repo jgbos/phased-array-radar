@@ -33,7 +33,7 @@ def serialread(ser,chunksize=8960, wordlength=2, shape=None, *args, **kwargs):
 
 def fileread(fn, chunksize=8960, wordlength=2, shape=None,*args,**kwargs):
 	"""
-		Yeilds frames of data from a binary file of given chunksize
+	Yields frames of data from a binary file of given chunksize
 	"""
 	with open(fn,'rb') as f:
 		while True:
@@ -48,17 +48,22 @@ def fileread(fn, chunksize=8960, wordlength=2, shape=None,*args,**kwargs):
 				break
 
 def filewrite(f, data, chunksize=8960, wordlength=2, *args, **kwargs):
+	"""
+	Writes frame of data to binary file
+	"""
+	if f is None:
+		raise('No file is open')
 	tmp = data.copy()
 	tmp.shape = (data.shape[0]*data.shape[1],)
 	bytes = [struct.pack('h',c) for c in tmp]
 	f.write(''.join(bytes))
 		
 def chunks(l, n):
-    """ 
+	""" 
 		Yield successive n-sized chunks from l.
-    """
-    for i in xrange(0, len(l), n):
-        yield l[i:i+n]
+	"""
+	for i in xrange(0, len(l), n):
+		yield l[i:i+n]
 
 def remove_dc_offset(frame):
 	"""
@@ -129,24 +134,15 @@ def main():
 	from optparse import OptionParser
 
 	parser = OptionParser()
-	parser.add_option("-f", "--file", dest="filename", 
-										help="binary file to read from", metavar="FILE")
-	parser.add_option("-p", "--port", dest="portname", 
-										help="serial port to read from", metavar="PORT")
-	parser.add_option("-r", "--record", dest="record", 
-										help="file to write data to", metavar="FILENAME")
-	parser.add_option("--mti", action="store_true", dest="mti", default=False, 
-										help="Turn on two pulse cancelor")
-	parser.add_option("--raw", action="store_true", dest="raw", default=False, 
-										help="plot raw data")
-	parser.add_option("--raw-mti", action="store_true", dest="rawmti", default=False, 
-										help="plot raw data with two-pulse cancel")
-	parser.add_option("--rti-avg", action="store_true", dest="rti", default=False, 
-										help="plot RTI averaged across channels")
-	parser.add_option("--rti-max", action="store_true", dest="rtici", default=False, 
-										help="plot RTI using max over angle bins in range-angle space")
-	parser.add_option("--range-angle", action="store_true", dest="angle", default=False, 
-										help="plot the range-angle data")
+	parser.add_option("-f", "--file", dest="filename", help="binary file to read from", metavar="FILE")
+	parser.add_option("-p", "--port", dest="portname", help="serial port to read from", metavar="PORT")
+	parser.add_option("-r", "--record", dest="record", help="file to write data to", metavar="FILENAME")
+	parser.add_option("--mti", action="store_true", dest="mti", default=False, help="Turn on two pulse cancelor")
+	parser.add_option("--raw", action="store_true", dest="raw", default=False, help="plot raw data")
+	parser.add_option("--raw-mti", action="store_true", dest="rawmti", default=False, help="plot raw data with two-pulse cancel")
+	parser.add_option("--rti-avg", action="store_true", dest="rti", default=False, help="plot RTI averaged across channels")
+	parser.add_option("--rti-max", action="store_true", dest="rtici", default=False, help="plot RTI using max over angle bins in range-angle space")
+	parser.add_option("--range-angle", action="store_true", dest="angle", default=False, help="plot the range-angle data")
 
 	(options, args) = parser.parse_args()
 	if len(args) == 1:

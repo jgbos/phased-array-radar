@@ -1,5 +1,7 @@
+# number of "virtual" elements
 numElements=14
 
+# number of samples from ADC
 numSamples=320
 
 # (m) 2.5/2 inch phase center spacing
@@ -16,4 +18,3 @@ fc = (fStart + fStop)/2
 
 # (Hz) transmit bandwidth
 BW = fStop - fStart            
-
