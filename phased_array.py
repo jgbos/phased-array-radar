@@ -134,7 +134,7 @@ def main():
 	parser.add_option("-p", "--port", dest="portname", 
 										help="serial port to read from", metavar="PORT")
 	parser.add_option("-r", "--record", dest="record", 
-										help="serial port to read from", metavar="FILENAME")
+										help="file to write data to", metavar="FILENAME")
 	parser.add_option("--mti", action="store_true", dest="mti", default=False, 
 										help="Turn on two pulse cancelor")
 	parser.add_option("--raw", action="store_true", dest="raw", default=False, 
