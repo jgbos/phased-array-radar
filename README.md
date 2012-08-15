@@ -18,13 +18,16 @@ Usage
 -----
 
 In a Mac or Unix environment type the following in a terminal window:
+	Usage: phased_array.py [options]
 
-python phased_array.py --help
+	Options:
+  	-h, --help            show this help message and exit
+  	-f FILE, --file=FILE  binary file to read from
+  	-p PORT, --port=PORT  serial port to read from
+  	--mti                 Turn on two pulse cancelor
+  	--raw                 plot raw data
+  	--raw-mti             plot raw data with two-pulse cancel
+  	--rti-avg             plot RTI averaged across channels
+  	--rti-max             plot RTI using max over angle bins in range-angle space
+  	--range-angle         plot the range-angle data
 
-Usage: phased_array.py [options]
-
-Options:
-  -h, --help            show this help message and exit
-  -f FILE, --file=FILE  binary file to read from
-  -p PORT, --port=PORT  serial port to read from
-  -m, --mti             Turn on two pulse cancelor
