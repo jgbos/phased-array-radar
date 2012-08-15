@@ -46,7 +46,7 @@ class DataDraw:
 		self.lastmode = self.mode
 		self.mode = mode
 
-	def draw(self,rci):
+	def draw(self,rci, xd=None):
 		if self.mode == 'raw':
 			self.set_data(rci)					
 			ax = self.image.get_axes()
@@ -64,7 +64,7 @@ class DataDraw:
 			self.update(rti)
 			self.set_data(self.buffer)
 			ax = self.image.get_axes()
-			ax.set_aspect(2)
+			ax.set_aspect(0.5)
 			self.image.set_clim(self.clim)
 			self.image.set_extent([0,self.buffer.shape[1]-1,0,self.buffer.shape[0]-1])
 		elif self.mode == 'ati':
@@ -73,7 +73,7 @@ class DataDraw:
 			val = 20*np.log10(rcs)
 			self.set_data(val)
 			ax = self.image.get_axes()
-			ax.set_aspect(5)
+			ax.set_aspect(2)
 			self.image.set_clim(self.clim)
 			self.image.set_extent([0,val.shape[1]-1,0,val.shape[0]-1])
 		elif self.mode == 'rti-ci':
@@ -81,10 +81,11 @@ class DataDraw:
 			self.update(val)
 			self.set_data(self.buffer)
 			ax = self.image.get_axes()
-			ax.set_aspect(2)
+			ax.set_aspect(0.5)
 			self.image.set_clim([-20,10])
 			self.image.set_extent([0,self.buffer.shape[1]-1,0,self.buffer.shape[0]-1])
 		
+		if xd is not None: self.set_xdata(xd)
 		plt.draw()
 
 	def update(self,rcs_m):
@@ -101,3 +102,15 @@ class DataDraw:
 		else:
 			self.image.set_data(data)
 
+	def set_xdata(self,xd):
+		ex = self.image.get_extent()
+		ex[0:2] = xd		
+		self.image.set_extent(ex)
+		plt.draw()
+
+	def set_ydata(self,yd):
+		ex = self.image.get_extent()
+		ex[2:4] = yd
+		self.image.set_extent(ex)
+		plt.draw()
+		

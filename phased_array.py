@@ -5,22 +5,21 @@ import numpy as np
 import struct
 import serial
 from plots import DataDraw
-import radar
 
-def serialopen(port, baudrate=9600, stopbits=1, *args, **kwargs):
+def serialopen(port, baudrate=9600, stopbits=1):
 	ser = serial.Serial(port)
 	ser.baudrate = baudrate
 	ser.stopbits = stopbits
 	return ser
 
-def synchronize(ser,chunksize=8960, wordlength=2, *args, **kwargs):
+def synchronize(ser,chunksize=8960, wordlength=2):
 	while True:
 		temp = ser.read(wordlength)
 		if int(struct.unpack('h',temp)[0]) >> 12 == 1:
 			ser.read(chunksize-wordlength)
 			return ser
 
-def serialread(ser,chunksize=8960, wordlength=2, shape=None, *args, **kwargs):
+def serialread(ser,chunksize=8960, wordlength=2, shape=None):
 	while True:
 		if ser.isOpen() and ser.readable():
 			data = [struct.unpack('h',c) for c in chunks(ser.read(chunksize),wordlength)]
@@ -31,7 +30,7 @@ def serialread(ser,chunksize=8960, wordlength=2, shape=None, *args, **kwargs):
 		else:
 			break
 
-def fileread(fn, chunksize=8960, wordlength=2, shape=None,*args,**kwargs):
+def fileread(fn, chunksize=8960, wordlength=2, shape=None):
 	"""
 	Yields frames of data from a binary file of given chunksize
 	"""
@@ -47,7 +46,7 @@ def fileread(fn, chunksize=8960, wordlength=2, shape=None,*args,**kwargs):
 			else:
 				break
 
-def filewrite(f, data, chunksize=8960, wordlength=2, *args, **kwargs):
+def filewrite(f, data, chunksize=8960, wordlength=2):
 	"""
 	Writes frame of data to binary file
 	"""
@@ -88,48 +87,64 @@ def process(port=None,file=None, mti=True,ptype=None,record=None, *args,**kwargs
 	"""
 	Process data from a file or a serial port
 	"""
+	import radar
+
 	numElements = radar.numElements
 	numSamples = radar.numSamples
+	nfft = radar.NFFT
+	nfft_angle = radar.NFFT_ANGLE
+	upRange =  nfft/numSamples
+	delta_r = radar.delta_r
+	
+	if port is None and file is None:
+		raise('port or filename expected')
 
 	if port is not None:
-		ser = serialopen(port, *args, **kwargs)
-		ser = synchronize(ser, *args, **kwargs)
-		frames = serialread(ser,shape=(numElements,numSamples), *args, **kwargs)
+		ser = serialopen(port)
+		ser = synchronize(ser)
+		frames = serialread(ser,shape=(numElements,numSamples))
 	elif file is not None:
-		frames = fileread(file,shape=(numElements,numSamples), *args, **kwargs)	
+		frames = fileread(file,shape=(numElements,numSamples))	
 
-	plot = DataDraw()
-	plot.set_mode(ptype)
+	if ptype is not None:
+		plot = DataDraw()
+		plot.set_mode(ptype)
 
 	if record is not None:
 		rec = open(record,'wb')
 
-	lastFrame = None
-	for frame in frames:
+	try:
+		lastFrame = None
+		for frame in frames:
+			
+			if record is not None:
+				filewrite(rec,frame)
 		
-		if record is not None:
-			filewrite(rec,frame)
-	
-		if plot.mode == 'raw':
-			plot.draw(frame)
-	
-		if mti:
-			if lastFrame is None: 
+			if plot.mode == 'raw':
+				plot.draw(frame, xd = np.array([0,nfft/2.-1])*delta_r/upRange)
+		
+			if mti:
+				if lastFrame is None: 
+					lastFrame = frame
+					continue
+				data = frame - lastFrame
 				lastFrame = frame
-				continue
-			data = frame - lastFrame
-			lastFrame = frame
-		else:
-			data = frame		
+			else:
+				data = frame		
+		
+			if plot.mode == 'raw-mti':
+				plot.draw(data, xd = np.array([0,nfft/2.-1])*delta_r/upRange)
+		
+			rci = toiq(data, nfft=nfft)
+		
+			if plot.mode == 'rti' or plot.mode=='ati' or plot.mode=='rti-ci':
+				plot.draw(rci, xd = np.array([0,nfft/2.-1])*delta_r/upRange)
+				
+	except KeyboardInterrupt:
+		if port is not None: ser.close()
+		if record is not None: rec.close()
+		raise
 	
-		if plot.mode == 'raw-mti':
-			plot.draw(data)
-	
-		rci = toiq(data)
-	
-		if plot.mode == 'rti' or plot.mode=='ati' or plot.mode=='rti-ci':
-			plot.draw(rci)
-
 def main():
 	from optparse import OptionParser
 
@@ -151,11 +166,17 @@ def main():
 	if options.portname and options.filename:
 		parser.error('options port and file are mutually exclusive')
 
-	plot = 'rti'
+	os = [options.raw, options.rawmti, options.rti, options.angle, options.rtici]
+	if len([o for o in os if o])>1:
+		parser.error('only one plot options can be provided')
+
+	plot = None
 	if options.raw:
 		plot = 'raw'
 	elif options.rawmti:
 		plot = 'raw-mti'
+	elif options.rti:
+		plot = 'rti'
 	elif options.angle:
 		plot = 'ati'
 	elif options.rtici:
