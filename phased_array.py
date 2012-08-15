@@ -4,7 +4,7 @@ from scipy import hamming, fftpack
 import numpy as np
 import struct
 import serial
-import matplotlib.pyplot as plt
+from plots import DataDraw
 
 def serialopen(port, baudrate=9600, stopbits=1, *args, **kwargs):
 	ser = serial.Serial(port)
@@ -12,7 +12,7 @@ def serialopen(port, baudrate=9600, stopbits=1, *args, **kwargs):
 	ser.stopbits = stopbits
 	return ser
 
-def synchronize(ser,chunksize=8960,wordlength=2, *args, **kwargs):
+def synchronize(ser,chunksize=8960, wordlength=2, *args, **kwargs):
 	while True:
 		temp = ser.read(wordlength)
 		if int(struct.unpack('h',temp)[0]) >> 12 == 1:
@@ -26,7 +26,7 @@ def serialread(ser,chunksize=8960, wordlength=2, shape=None, *args, **kwargs):
 			if shape is not None:
 				data = np.array(data)
 				data.shape = shape
-			yield data & 2**12-1
+			yield remove_dc_offset(data & 2**12-1)
 		else:
 			break
 
@@ -42,7 +42,7 @@ def fileread(fn, chunksize=8960, wordlength=2, shape=None,*args,**kwargs):
 				if shape is not None:
 					data = np.array(data)
 					data.shape = shape
-				yield data
+				yield remove_dc_offset(data)
 			else:
 				break
 
@@ -72,7 +72,7 @@ def toiq(frame,nfft=2048):
 	data = fftpack.ifft(win*frame,nfft,axis=1)
 	return data[:,0:nfft/2]	
 
-def process(port=None,file=None,numElements=14, numSamples=320, mti=True,plot=None,*args,**kwargs):
+def process(port=None,file=None,numElements=14, numSamples=320, mti=True,ptype=None,*args,**kwargs):
 	"""
 	Process data from a file or a serial port
 	"""
@@ -83,10 +83,15 @@ def process(port=None,file=None,numElements=14, numSamples=320, mti=True,plot=No
 	elif file is not None:
 		frames = fileread(file,shape=(numElements,numSamples), *args, **kwargs)	
 
+	plot = DataDraw()
+	plot.set_mode(ptype)
+
 	lastFrame = None
-	for rawData in frames:
-		frame = remove_dc_offset(rawData)
-		
+	for frame in frames:
+	
+		if plot.mode == 'raw':
+			plot.draw(frame)
+	
 		if mti:
 			if lastFrame is None: 
 				lastFrame = frame
@@ -95,37 +100,35 @@ def process(port=None,file=None,numElements=14, numSamples=320, mti=True,plot=No
 			lastFrame = frame
 		else:
 			data = frame		
-		
+	
+		if plot.mode == 'raw-mti':
+			plot.draw(data)
+	
 		rci = toiq(data)
-		
-		if plot is not None:
+	
+		if plot.mode == 'rti' or plot.mode=='ati' or plot.mode=='rti-ci':
 			plot.draw(rci)
-		
-class RTI:
-	def __init__(self, bufferSize=512, rangeGates=1024):
-		self.fig = plt.figure()
-		self.rtiBuf = np.zeros((bufferSize,rangeGates))
-		self.ny = bufferSize
-		self.nx = rangeGates
-			
-	def draw(self,rci):
-			rcs = np.sqrt( rci.real**2 + rci.imag**2)
-			val = rcs.sum(0) / 14
-			self.rtiBuf[0:511,:] = self.rtiBuf[1:512,:]
-			self.rtiBuf[511,:] = 20*np.log10(val)	
-		
-			plt.figure(self.fig.number)
-			plt.clf()	
-			plt.imshow(self.rtiBuf,aspect=2,vmin=-40,vmax=10,norm=None, extent=(0,self.nx-1,0,self.ny-1))
-			plt.draw()
 
 def main():
 	from optparse import OptionParser
 
 	parser = OptionParser()
-	parser.add_option("-f", "--file", dest="filename", help="binary file to read from", metavar="FILE")
-	parser.add_option("-p", "--port", dest="portname", help="serial port to read from", metavar="PORT")
-	parser.add_option("-m", "--mti", action="store_true", dest="mti", default=False, help="Turn on two pulse cancelor")
+	parser.add_option("-f", "--file", dest="filename", 
+										help="binary file to read from", metavar="FILE")
+	parser.add_option("-p", "--port", dest="portname", 
+										help="serial port to read from", metavar="PORT")
+	parser.add_option("--mti", action="store_true", dest="mti", default=False, 
+										help="Turn on two pulse cancelor")
+	parser.add_option("--raw", action="store_true", dest="raw", default=False, 
+										help="Turn on two pulse cancelor")
+	parser.add_option("--raw-mti", action="store_true", dest="rawmti", default=False, 
+										help="Turn on two pulse cancelor")
+	parser.add_option("--rti", action="store_true", dest="rti", default=False, 
+										help="Turn on two pulse cancelor")
+	parser.add_option("--rti-ci", action="store_true", dest="rtici", default=False, 
+										help="Turn on two pulse cancelor")
+	parser.add_option("--angle", action="store_true", dest="angle", default=False, 
+										help="Turn on two pulse cancelor")
 
 	(options, args) = parser.parse_args()
 	if len(args) == 1:
@@ -134,15 +137,26 @@ def main():
 	if options.portname and options.filename:
 		parser.error('options port and file are mutually exclusive')
 
+	plot = 'rti'
+	if options.raw:
+		plot = 'raw'
+	elif options.rawmti:
+		plot = 'raw-mti'
+	elif options.angle:
+		plot = 'ati'
+	elif options.rtici:
+		plot = 'rti-ci'
+
 	if options.portname:
 		try:
-			process(port=options.portname,mti=options.mti,plot=RTI())
+			process(port=options.portname,mti=options.mti,ptype=plot)
 		except KeyboardInterrupt:
 			raise
 	elif options.filename:
 		try:
-			process(file=options.filename,mti=options.mti,plot=RTI())
+			process(file=options.filename,mti=options.mti,ptype=plot)
 		except KeyboardInterrupt:
 			raise
+
 if __name__ == '__main__':
 	main()
