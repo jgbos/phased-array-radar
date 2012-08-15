@@ -17,7 +17,7 @@ I recommend using the free downloadable python distribution by [Enthough](http:/
 Usage
 -----
 
-In a Mac or Unix environment type the following in a terminal window:
+In a terminal type the following in a terminal window:
 	
 	Usage: phased_array.py [options]
 
@@ -34,3 +34,4 @@ In a Mac or Unix environment type the following in a terminal window:
   	--rti-max             plot RTI using max over angle bins in range-angle space
   	--range-angle         plot the range-angle data
 
+This code is untested in Windows and Linux.
