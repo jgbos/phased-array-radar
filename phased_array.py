@@ -5,6 +5,7 @@ import numpy as np
 import struct
 import serial
 from plots import DataDraw
+import radar
 
 def serialopen(port, baudrate=9600, stopbits=1, *args, **kwargs):
 	ser = serial.Serial(port)
@@ -46,6 +47,12 @@ def fileread(fn, chunksize=8960, wordlength=2, shape=None,*args,**kwargs):
 			else:
 				break
 
+def filewrite(f, data, chunksize=8960, wordlength=2, *args, **kwargs):
+	tmp = data.copy()
+	tmp.shape = (data.shape[0]*data.shape[1],)
+	bytes = [struct.pack('h',c) for c in tmp]
+	f.write(''.join(bytes))
+		
 def chunks(l, n):
     """ 
 		Yield successive n-sized chunks from l.
@@ -72,10 +79,13 @@ def toiq(frame,nfft=2048):
 	data = fftpack.ifft(win*frame,nfft,axis=1)
 	return data[:,0:nfft/2]	
 
-def process(port=None,file=None,numElements=14, numSamples=320, mti=True,ptype=None,*args,**kwargs):
+def process(port=None,file=None, mti=True,ptype=None,record=None, *args,**kwargs):
 	"""
 	Process data from a file or a serial port
 	"""
+	numElements = radar.numElements
+	numSamples = radar.numSamples
+
 	if port is not None:
 		ser = serialopen(port, *args, **kwargs)
 		ser = synchronize(ser, *args, **kwargs)
@@ -86,8 +96,14 @@ def process(port=None,file=None,numElements=14, numSamples=320, mti=True,ptype=N
 	plot = DataDraw()
 	plot.set_mode(ptype)
 
+	if record is not None:
+		rec = open(record,'wb')
+
 	lastFrame = None
 	for frame in frames:
+		
+		if record is not None:
+			filewrite(rec,frame)
 	
 		if plot.mode == 'raw':
 			plot.draw(frame)
@@ -117,6 +133,8 @@ def main():
 										help="binary file to read from", metavar="FILE")
 	parser.add_option("-p", "--port", dest="portname", 
 										help="serial port to read from", metavar="PORT")
+	parser.add_option("-r", "--record", dest="record", 
+										help="serial port to read from", metavar="FILENAME")
 	parser.add_option("--mti", action="store_true", dest="mti", default=False, 
 										help="Turn on two pulse cancelor")
 	parser.add_option("--raw", action="store_true", dest="raw", default=False, 
@@ -147,9 +165,13 @@ def main():
 	elif options.rtici:
 		plot = 'rti-ci'
 
+	rec = None
+	if options.record:
+		rec = options.record
+
 	if options.portname:
 		try:
-			process(port=options.portname,mti=options.mti,ptype=plot)
+			process(port=options.portname,mti=options.mti,ptype=plot,record=rec)
 		except KeyboardInterrupt:
 			raise
 	elif options.filename:

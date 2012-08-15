@@ -1,3 +1,7 @@
+numElements=14
+
+numSamples=320
+
 # (m) 2.5/2 inch phase center spacing
 dx = 2.5*(1/12)*0.3048    
 
