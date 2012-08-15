@@ -18,6 +18,7 @@ Usage
 -----
 
 In a Mac or Unix environment type the following in a terminal window:
+	
 	Usage: phased_array.py [options]
 
 	Options:
