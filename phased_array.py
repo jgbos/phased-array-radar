@@ -120,15 +120,15 @@ def main():
 	parser.add_option("--mti", action="store_true", dest="mti", default=False, 
 										help="Turn on two pulse cancelor")
 	parser.add_option("--raw", action="store_true", dest="raw", default=False, 
-										help="Turn on two pulse cancelor")
+										help="plot raw data")
 	parser.add_option("--raw-mti", action="store_true", dest="rawmti", default=False, 
-										help="Turn on two pulse cancelor")
-	parser.add_option("--rti", action="store_true", dest="rti", default=False, 
-										help="Turn on two pulse cancelor")
-	parser.add_option("--rti-ci", action="store_true", dest="rtici", default=False, 
-										help="Turn on two pulse cancelor")
-	parser.add_option("--angle", action="store_true", dest="angle", default=False, 
-										help="Turn on two pulse cancelor")
+										help="plot raw data with two-pulse cancel")
+	parser.add_option("--rti-avg", action="store_true", dest="rti", default=False, 
+										help="plot RTI averaged across channels")
+	parser.add_option("--rti-max", action="store_true", dest="rtici", default=False, 
+										help="plot RTI using max over angle bins in range-angle space")
+	parser.add_option("--range-angle", action="store_true", dest="angle", default=False, 
+										help="plot the range-angle data")
 
 	(options, args) = parser.parse_args()
 	if len(args) == 1:
