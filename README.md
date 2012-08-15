@@ -25,6 +25,8 @@ In a Mac or Unix environment type the following in a terminal window:
   	-h, --help            show this help message and exit
   	-f FILE, --file=FILE  binary file to read from
   	-p PORT, --port=PORT  serial port to read from
+  	-r FILENAME, --record=FILENAME
+        	              file to write data to
   	--mti                 Turn on two pulse cancelor
   	--raw                 plot raw data
   	--raw-mti             plot raw data with two-pulse cancel
